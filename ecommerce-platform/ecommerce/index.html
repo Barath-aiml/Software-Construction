@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopFlow — Product Management Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- SheetJS for Excel support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="app-wrapper">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🛍</div>
+        <div>
+          <div class="logo-text">Shop<span>Flow</span></div>
+          <div class="logo-sub">v1.0 · Admin</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </div>
+
+      <div class="nav-section-label">Products</div>
+      <div class="nav-item" data-view="products">
+        <span class="nav-icon">📦</span>
+        <span>All Products</span>
+      </div>
+      <div class="nav-item" data-view="add">
+        <span class="nav-icon">➕</span>
+        <span>Add Product</span>
+      </div>
+      <div class="nav-item" data-view="upload">
+        <span class="nav-icon">📤</span>
+        <span>Bulk Upload</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-stats">
+        <div class="stat-pill">
+          <div class="stat-pill-val" id="sb-total">0</div>
+          <div class="stat-pill-label">Total</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-val" id="sb-active">0</div>
+          <div class="stat-pill-label">Active</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">
+        <span id="topbar-title">Dashboard</span>
+        <span class="page-badge">STORE ADMIN</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="switchView('add')">
+          ➕ Add Product
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="switchView('upload')">
+          📤 Bulk Upload
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ==================== DASHBOARD VIEW ==================== -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card cyan">
+            <div class="stat-icon cyan">📦</div>
+            <div class="stat-value" id="dash-total">0</div>
+            <div class="stat-label">Total Products</div>
+            <div class="stat-change">↑ All time</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-value" id="dash-active">0</div>
+            <div class="stat-label">Active Products</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon orange">💰</div>
+            <div class="stat-value" id="dash-value">₹0</div>
+            <div class="stat-label">Inventory Value</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon purple">🏷</div>
+            <div class="stat-value" id="dash-categories">0</div>
+            <div class="stat-label">Categories</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📋 Recently Added</div>
+              <button class="btn btn-secondary btn-sm" onclick="switchView('products')">View All →</button>
+            </div>
+            <div id="recent-products"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🏷 By Category</div>
+            </div>
+            <div id="category-breakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PRODUCTS VIEW ==================== -->
+      <div class="view" id="view-products">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <div class="card-title">📦 Product Catalogue</div>
+            <button class="btn btn-primary btn-sm" onclick="switchView('add')">➕ New Product</button>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-bar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-name" class="form-control" placeholder="Search by name or SKU…" />
+            </div>
+            <div>
+              <label class="form-label">Min Price (₹)</label>
+              <input type="number" id="search-price-min" class="form-control" placeholder="0" min="0" style="width:120px"/>
+            </div>
+            <div>
+              <label class="form-label">Max Price (₹)</label>
+              <input type="number" id="search-price-max" class="form-control" placeholder="99999" min="0" style="width:120px"/>
+            </div>
+            <div>
+              <label class="form-label">Category</label>
+              <select id="search-category" class="form-control" style="width:140px">
+                <option value="">All Categories</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Sports">Sports</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-secondary" onclick="clearSearch()">✕ Clear</button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Added</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="product-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">
+                  <div class="loading-spinner"></div>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination-wrapper">
+            <div class="pagination-info" id="pagination-info">Loading…</div>
+            <div class="pagination-controls" id="pagination-controls"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ADD PRODUCT VIEW ==================== -->
+      <div class="view" id="view-add">
+        <div class="card" style="max-width:760px">
+          <div class="card-header">
+            <div class="card-title">➕ Add New Product</div>
+          </div>
+
+          <form id="add-product-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Product Name <span class="form-required">*</span></label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Wireless Earbuds Pro" required />
+                <div class="form-error" id="name-error"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">SKU <span class="form-required">*</span></label>
+                <input type="text" name="sku" class="form-control" placeholder="e.g. ELEC-001" required />
+                <div class="form-error" id="sku-error"></div>
+                <div class="form-hint">Unique product identifier</div>
+              </div>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Category <span class="form-required">*</span></label>
+                <select name="category" class="form-control" required>
+                  <option value="">Select category</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Kitchen">Kitchen</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Accessories">Accessories</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Price (₹) <span class="form-required">*</span></label>
+                <input type="number" name="price" class="form-control" placeholder="0.00" min="0" step="0.01" required />
+                <div class="form-error" id="price-error"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stock Qty <span class="form-required">*</span></label>
+                <input type="number" name="stock" class="form-control" placeholder="0" min="0" required />
+                <div class="form-error" id="stock-error"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" placeholder="Product description…"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Product Image</label>
+              <div class="image-upload-area" onclick="document.getElementById('add-image-input').click()">
+                <input type="file" id="add-image-input" accept="image/*" style="display:none" />
+                <div id="add-image-preview" style="display:none"></div>
+                <div id="add-image-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                  <span style="font-size:32px">🖼</span>
+                  <span style="font-size:13px;color:var(--text-muted)">Click to upload image (max 2MB)</span>
+                  <span style="font-size:11px;color:var(--text-muted)">JPG, PNG, WEBP — No image URLs allowed</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+              <button type="button" class="btn btn-secondary" onclick="switchView('products')">Cancel</button>
+              <button type="submit" class="btn btn-primary">✅ Save Product</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==================== BULK UPLOAD VIEW ==================== -->
+      <div class="view" id="view-upload">
+        <div style="max-width:800px">
+
+          <!-- Template Download -->
+          <div class="template-section">
+            <div class="template-info">
+              <h4>📄 Download CSV Template</h4>
+              <p>Use this template to format your bulk upload file correctly</p>
+            </div>
+            <button class="btn btn-secondary" onclick="downloadCSVTemplate()">⬇ Download Template</button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📤 Bulk Product Upload</div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-zone" id="bulk-upload-zone">
+              <input type="file" id="bulk-file-input" accept=".csv,.xlsx,.xls" />
+              <div class="upload-icon">📁</div>
+              <div class="upload-title">Drag & drop your file here</div>
+              <div class="upload-sub">or click to browse</div>
+              <div class="upload-formats">
+                <span class="format-tag">.CSV</span>
+                <span class="format-tag">.XLSX</span>
+                <span class="format-tag">.XLS</span>
+              </div>
+            </div>
+
+            <!-- Processing Indicator -->
+            <div id="bulk-processing" style="display:none;align-items:center;gap:12px;padding:20px;justify-content:center">
+              <div class="loading-spinner"></div>
+              <span style="color:var(--text-secondary)">Processing file, validating products…</span>
+            </div>
+
+            <!-- Results -->
+            <div class="upload-results" id="bulk-results" style="display:none">
+              <div class="upload-summary">
+                <div class="summary-card success">
+                  <div class="summary-val success" id="bulk-success-count">0</div>
+                  <div class="summary-label">✅ Uploaded</div>
+                </div>
+                <div class="summary-card warning">
+                  <div class="summary-val warning" id="bulk-warning-count">0</div>
+                  <div class="summary-label">⚠️ Skipped</div>
+                </div>
+                <div class="summary-card error">
+                  <div class="summary-val error" id="bulk-error-count">0</div>
+                  <div class="summary-label">❌ Failed</div>
+                </div>
+              </div>
+              <div class="result-list" id="bulk-result-list"></div>
+              <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" onclick="document.getElementById('bulk-results').style.display='none';document.getElementById('bulk-file-input').value=''">Upload Another</button>
+                <button class="btn btn-primary" onclick="switchView('products')">View Products →</button>
+              </div>
+            </div>
+
+            <!-- Rules -->
+            <div style="margin-top:24px;background:var(--bg-elevated);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-secondary)">📋 Upload Rules & Validation</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--text-muted)">
+                <div>✅ Required fields: name, sku, category, price, stock</div>
+                <div>🚫 Image URLs are blocked — upload images only</div>
+                <div>🚫 Duplicate SKUs within batch are rejected</div>
+                <div>🚫 Existing SKUs in database are skipped</div>
+                <div>⚠️ Invalid prices or stock values are flagged</div>
+                <div>✅ Valid rows are saved automatically</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </main>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- View Product Modal -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <div class="modal-title">👁 Product Details</div>
+      <button class="modal-close" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="view-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-warning" onclick="closeModal('view-modal');openEditModal(AppState.viewProductId)">✏️ Edit</button>
+      <button class="btn btn-secondary" onclick="closeModal('view-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit Product</div>
+      <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="edit-product-form" novalidate>
+        <input type="hidden" id="edit-stored-image" />
+        <input type="hidden" id="edit-stored-hash" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Product Name <span class="form-required">*</span></label>
+            <input type="text" name="name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU <span class="form-required">*</span></label>
+            <input type="text" name="sku" class="form-control" required />
+            <div class="form-error" id="edit-sku-error"></div>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Category <span class="form-required">*</span></label>
+            <select name="category" class="form-control" required>
+              <option value="">Select</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Kitchen">Kitchen</option>
+              <option value="Sports">Sports</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Price (₹) <span class="form-required">*</span></label>
+            <input type="number" name="price" class="form-control" min="0" step="0.01" required />
+            <div class="form-error" id="edit-price-error"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock Qty <span class="form-required">*</span></label>
+            <input type="number" name="stock" class="form-control" min="0" required />
+            <div class="form-error" id="edit-stock-error"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Product Image</label>
+          <div class="image-upload-area" onclick="document.getElementById('edit-image-input').click()">
+            <input type="file" id="edit-image-input" accept="image/*" style="display:none" />
+            <div id="edit-image-preview" style="display:none"></div>
+            <div id="edit-image-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <span style="font-size:32px">🖼</span>
+              <span style="font-size:13px;color:var(--text-muted)">Click to change image</span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="document.getElementById('edit-product-form').requestSubmit()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal confirm-modal">
+    <div class="modal-body" style="padding:32px;text-align:center">
+      <div class="confirm-icon">🗑️</div>
+      <div class="confirm-title">Delete Product?</div>
+      <div class="confirm-text">
+        Are you sure you want to delete <strong id="delete-product-name">this product</strong>?<br/>
+        This action cannot be undone.
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:center;gap:12px">
+      <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="db/database.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
